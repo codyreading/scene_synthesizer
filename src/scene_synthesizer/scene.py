@@ -29,6 +29,7 @@ from . import utils
 from .assets import Asset, BoxAsset, BoxMeshAsset, BoxWithHoleAsset, TrimeshAsset, TrimeshSceneAsset
 from .exchange import export
 from .utils import log
+from .constants import EDGE_KEY_METADATA
 
 try:
     # Third Party
@@ -715,9 +716,9 @@ class Scene(object):
             parent = self._scene.graph.transforms.parents[n]
             edge_data = self._scene.graph.transforms.edge_data[(parent, n)]
             articulated_node = (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
             )
             if n not in self._scene.graph.geometry_nodes and not articulated_node:
                 # node does not have geometry attached to it and will be removed
@@ -735,15 +736,15 @@ class Scene(object):
                     children_extras = {}
                     for x in self._scene.graph.transforms.children[n]:
                         edge_data = self._scene.graph.transforms.edge_data[(n, x)]
-                        children_extras[x] = {"extras": edge_data.get("extras", None)}
+                        children_extras[x] = {EDGE_KEY_METADATA: edge_data.get(EDGE_KEY_METADATA, None)}
                         if (
-                            "extras" in edge_data
-                            and edge_data["extras"] is not None
-                            and "joint" in edge_data["extras"]
+                            EDGE_KEY_METADATA in edge_data
+                            and edge_data[EDGE_KEY_METADATA] is not None
+                            and "joint" in edge_data[EDGE_KEY_METADATA]
                         ):
-                            if "origin" in edge_data["extras"]["joint"]:
-                                children_extras[x]["extras"]["joint"]["origin"] = (
-                                    T_parent @ children_extras[x]["extras"]["joint"]["origin"]
+                            if "origin" in edge_data[EDGE_KEY_METADATA]["joint"]:
+                                children_extras[x][EDGE_KEY_METADATA]["joint"]["origin"] = (
+                                    T_parent @ children_extras[x][EDGE_KEY_METADATA]["joint"]["origin"]
                                 )
 
                     self._scene.graph.transforms.remove_node(n)
@@ -809,16 +810,16 @@ class Scene(object):
         for k in scene_edge_data:
             edge_data = scene_edge_data[k]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
             ):
-                joint_data = edge_data["extras"]["joint"]
+                joint_data = edge_data[EDGE_KEY_METADATA]["joint"]
                 joint_map[joint_data["name"]] = k
 
         # Apply the name mapping
         for old_name, new_name in mappings:
-            scene_edge_data[joint_map[old_name]]["extras"]["joint"]["name"] = new_name
+            scene_edge_data[joint_map[old_name]][EDGE_KEY_METADATA]["joint"]["name"] = new_name
 
         # clear cache
         self.get_joint_names.cache_clear()
@@ -1431,7 +1432,7 @@ class Scene(object):
                 (self._scene.graph.transforms.parents[obj_id], obj_id)
             ].update(
                 {
-                    "extras": {
+                    EDGE_KEY_METADATA: {
                         "joint": {
                             "name": f"{obj_id}/{parent_id.replace('/', '_')}_{joint_type}_joint",
                             "type": joint_type,
@@ -1607,7 +1608,7 @@ class Scene(object):
                 # Skip edges that connect a node that is not of interest
                 continue
 
-            if "extras" not in e[2] or e[2]["extras"] is None or "joint" not in e[2]["extras"]:
+            if EDGE_KEY_METADATA not in e[2] or e[2][EDGE_KEY_METADATA] is None or "joint" not in e[2][EDGE_KEY_METADATA]:
                 edges.append(e)
             else:
                 tmp_joints.append(e)
@@ -1849,13 +1850,13 @@ class Scene(object):
         for k in self._scene.graph.transforms.edge_data:
             edge_data = scene_edge_data[k]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
-                and (obj_id is None or edge_data["extras"]["joint"]["name"].startswith(obj_id + '/'))
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
+                and (obj_id is None or edge_data[EDGE_KEY_METADATA]["joint"]["name"].startswith(obj_id + '/'))
             ):
-                if edge_data["extras"]["joint"]["type"] in joint_types:
-                    joint_names.append(edge_data["extras"]["joint"]["name"])
+                if edge_data[EDGE_KEY_METADATA]["joint"]["type"] in joint_types:
+                    joint_names.append(edge_data[EDGE_KEY_METADATA]["joint"]["name"])
 
         joint_names = sorted(joint_names)
 
@@ -1888,12 +1889,12 @@ class Scene(object):
         for k in self._scene.graph.transforms.edge_data:
             edge_data = scene_edge_data[k]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
-                and (obj_id is None or edge_data["extras"]["joint"]["name"].startswith(obj_id))
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
+                and (obj_id is None or edge_data[EDGE_KEY_METADATA]["joint"]["name"].startswith(obj_id))
             ):
-                joint_data = edge_data["extras"]["joint"]
+                joint_data = edge_data[EDGE_KEY_METADATA]["joint"]
                 if include_fixed_floating_joints or joint_data["type"] not in ["fixed", "floating"]:
                     joint_props[joint_data["name"]] = joint_data
 
@@ -1929,7 +1930,7 @@ class Scene(object):
         if (parent_node, child_node) not in scene_edge_data:
             raise ValueError(f"Joint {joint_id} not in scene. Can't update its properties.")
 
-        scene_edge_data[(parent_node, child_node)]["extras"]["joint"].update({**kwargs})
+        scene_edge_data[(parent_node, child_node)][EDGE_KEY_METADATA]["joint"].update({**kwargs})
 
         # clear cache
         self.get_joint_names.cache_clear()
@@ -2165,8 +2166,8 @@ class Scene(object):
             raise ValueError(f"No edge between {parent_node} and {child_node} in the scene graph.")
 
         if (
-            "extras" in scene_edge_data[(parent_node, child_node)]
-            and "joint" in scene_edge_data[(parent_node, child_node)]["extras"]
+            EDGE_KEY_METADATA in scene_edge_data[(parent_node, child_node)]
+            and "joint" in scene_edge_data[(parent_node, child_node)][EDGE_KEY_METADATA]
         ):
             raise ValueError(
                 f"Can't add joint between {parent_node} and {child_node} in the scene graph."
@@ -2174,7 +2175,7 @@ class Scene(object):
             )
 
         scene_edge_data[(parent_node, child_node)].update(
-            {"extras": {"joint": {"name": name, "type": type, **kwargs}}}
+            {EDGE_KEY_METADATA: {"joint": {"name": name, "type": type, **kwargs}}}
         )
 
         # clear cache
@@ -2198,12 +2199,12 @@ class Scene(object):
         for k in self._scene.graph.transforms.edge_data:
             edge_data = scene_edge_data[k]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
-                and edge_data["extras"]["joint"]["name"] in joint_ids
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
+                and edge_data[EDGE_KEY_METADATA]["joint"]["name"] in joint_ids
             ):
-                del self._scene.graph.transforms.edge_data[k]["extras"]["joint"]
+                del self._scene.graph.transforms.edge_data[k][EDGE_KEY_METADATA]["joint"]
 
         # clear cache
         self.get_joint_names.cache_clear()
@@ -2228,15 +2229,15 @@ class Scene(object):
             edge_data = scene_edge_data[(parent, n)]
             # check if articulation between n and parent
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
             ):
-                if include_fixed_floating_joints or edge_data["extras"]["joint"]["type"] not in [
+                if include_fixed_floating_joints or edge_data[EDGE_KEY_METADATA]["joint"]["type"] not in [
                     "fixed",
                     "floating",
                 ]:
-                    return edge_data["extras"]["joint"]["name"]
+                    return edge_data[EDGE_KEY_METADATA]["joint"]["name"]
 
             n = parent
 
@@ -2258,10 +2259,10 @@ class Scene(object):
         for edge in scene_edge_data:
             edge_data = scene_edge_data[edge]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
-                and edge_data["extras"]["joint"]["name"] == joint_id
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
+                and edge_data[EDGE_KEY_METADATA]["joint"]["name"] == joint_id
             ):
                 return edge
 
@@ -3570,6 +3571,7 @@ class Scene(object):
         if not specific_objects and not specific_geometries:
             for _, obj_mesh in self._scene.geometry.items():
                 full_color = utils.adjust_color(color=color, seed=self._rng, **kwargs)
+                log.debug(f"Colorize everything. Using color: {full_color}")
                 # Some meshes don't have the face_color property.
                 # In this case the method would crash.
                 # We're just ignoring those meshes.
@@ -3587,6 +3589,7 @@ class Scene(object):
 
         for obj_id, color in specific_objects.items():
             full_color = utils.adjust_color(color=color, seed=self._rng, **kwargs)
+            log.debug(f"Colorize specific objects. Using color: {full_color}")
             try:
                 geom_names = [self.graph[gn][1] for gn in self._scene.metadata["object_geometry_nodes"][obj_id]]
                 for geometry_name in geom_names:
@@ -3602,6 +3605,7 @@ class Scene(object):
 
         for geometry_name, color in specific_geometries.items():
             full_color = utils.adjust_color(color=color, seed=self._rng, **kwargs)
+            log.debug(f"Colorize specific geometries. Using color: {full_color}")
             try:
                 if not self._scene.geometry[geometry_name].visual.defined or reset_visuals:
                     self._scene.geometry[geometry_name].visual = trimesh.visual.create_visual(
@@ -4092,11 +4096,11 @@ class Scene(object):
         for edge in G.edges:
             scene_edge = [e for e in edges if e[0] == edge[0] and e[1] == edge[1]][0]
             if (
-                "extras" in scene_edge[2]
-                and scene_edge[2]["extras"] is not None
-                and "joint" in scene_edge[2]["extras"]
+                EDGE_KEY_METADATA in scene_edge[2]
+                and scene_edge[2][EDGE_KEY_METADATA] is not None
+                and "joint" in scene_edge[2][EDGE_KEY_METADATA]
             ):
-                color = edge_color_joints.get(scene_edge[2]["extras"]["joint"]["type"], edge_color_joint)
+                color = edge_color_joints.get(scene_edge[2][EDGE_KEY_METADATA]["joint"]["type"], edge_color_joint)
                 edge_colors.append(color)
             else:
                 edge_colors.append(edge_color)

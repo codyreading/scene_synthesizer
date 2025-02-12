@@ -11,7 +11,7 @@ import yourdfpy
 # Local Folder
 from .. import utils
 from ..utils import log
-
+from ..constants import EDGE_KEY_METADATA
 
 def export_urdf(scene,
                 fname,
@@ -434,7 +434,7 @@ def scene_as_urdf(
         for parent_node, child_node in joints:
             joint_data = joints[(parent_node, child_node)]
             old_parent, _, properties = joint_data
-            joint_properties = properties["extras"]["joint"]
+            joint_properties = properties[EDGE_KEY_METADATA]["joint"]
 
             parent_name = _get_urdf_name(parent_node, ignore_namespace=ignore_namespace)
             child_name = _get_urdf_name(child_node, ignore_namespace=ignore_namespace)
@@ -577,11 +577,11 @@ def scene_as_urdf(
 
             edge_data = scene._scene.graph.transforms.edge_data[(parent, child)]
             if (
-                "extras" in edge_data
-                and edge_data["extras"] is not None
-                and "joint" in edge_data["extras"]
+                EDGE_KEY_METADATA in edge_data
+                and edge_data[EDGE_KEY_METADATA] is not None
+                and "joint" in edge_data[EDGE_KEY_METADATA]
             ):
-                joint_properties = edge_data["extras"]["joint"]
+                joint_properties = edge_data[EDGE_KEY_METADATA]["joint"]
 
                 joint_limit = None
                 joint_axis = None

@@ -15,3 +15,5 @@ DEFAULT_JOINT_DAMPING = None
 # This is used when 'up' and 'front' vectors are specified
 DEFAULT_TOLERANCE_UP_FRONT_ORTHOGONALITY = 1e-7
 
+# This is the key in the scene graph edge data where e.g. joint information is stored
+EDGE_KEY_METADATA = 'metadata'

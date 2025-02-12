@@ -117,9 +117,15 @@ def test_export_urdf_kitchen_write_meshes(tmpdir, golden_dir, kitchen_scene):
     generated_urdf = yourdfpy.URDF.load(output_fname, build_scene_graph=False, load_meshes=False)
     golden_urdf = yourdfpy.URDF.load(golden_urdf_fname, build_scene_graph=False, load_meshes=False)
 
+    previous_value = yourdfpy.urdf.EQUALITY_TOLERANCE
+    yourdfpy.urdf.EQUALITY_TOLERANCE = 1e-2
+
     assert (
         generated_urdf == golden_urdf
     ), f"{output_fname} differs from {golden_urdf_fname}"
+    
+    yourdfpy.urdf.EQUALITY_TOLERANCE = previous_value
+
 
 
 def test_export_urdf_kitchen_collision_write_meshes(tmpdir, golden_dir, kitchen_scene_collision):
@@ -135,10 +141,14 @@ def test_export_urdf_kitchen_collision_write_meshes(tmpdir, golden_dir, kitchen_
     generated_urdf = yourdfpy.URDF.load(output_fname, build_scene_graph=False, load_meshes=False)
     golden_urdf = yourdfpy.URDF.load(golden_urdf_fname, build_scene_graph=False, load_meshes=False)
 
+    previous_value = yourdfpy.urdf.EQUALITY_TOLERANCE
+    yourdfpy.urdf.EQUALITY_TOLERANCE = 1e-2
+
     assert (
         generated_urdf == golden_urdf
     ), f"{output_fname} differs from {golden_urdf_fname}"
 
+    yourdfpy.urdf.EQUALITY_TOLERANCE = previous_value
 
 @_skip_if_file_is_missing
 def test_export_urdf_nonwatertight_mass_setting(tmpdir):

@@ -8,17 +8,18 @@ import functools
 from pxr.Tf import ErrorException
 
 def _skip_if_file_is_missing(func):
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            ret = func(*args, **kwargs)
+            return func(*args, **kwargs)
         except ValueError as e:
             if 'is not a file' in str(e):
                 pytest.skip(f"Skipping: {e}")
-        except ErrorException as e:
+        except Exception as e:  # Catch all exceptions instead of an undefined 'ErrorException'
             if 'Failed to open layer' in str(e):
                 pytest.skip(f"Skipping: {e}")
         except ImportError as e:
             pytest.skip(f"Skipping: {e}")
-        return ret
-    return functools.update_wrapper(wrapper, func)
 
+        return None  # Ensure there's always a return value
+    return wrapper

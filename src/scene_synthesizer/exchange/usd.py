@@ -11,7 +11,7 @@ import trimesh.transformations as tra
 from ..usd_import import get_meters_per_unit, get_stage
 from ..utils import log
 from . import usd_export
-
+from ..constants import EDGE_KEY_METADATA
 
 def export_usd(
     scene,
@@ -577,7 +577,11 @@ def export_usd(
                     # g = self.scene.geometry[geom_name]
                     # The `include_cache=True` seems to have fixed it(?)
                     # I copy the visual properties separately
-                    g = scene.scene.geometry[geom_name].copy(include_cache=True)
+                    if isinstance(scene.scene.geometry[geom_name], trimesh.primitives.Primitive):
+                        g = scene.scene.geometry[geom_name].copy()
+                    else:                        
+                        g = scene.scene.geometry[geom_name].copy(include_cache=True)
+                    
                     g_vis = scene.scene.geometry[geom_name].visual.copy()
 
                     scene_path = scenegraph_to_usd_primpath[object_node]
@@ -638,7 +642,7 @@ def export_usd(
         parent_node = scene.graph.transforms.parents[object_name]
 
         edge_is_joint = (
-            "extras" in edge and edge["extras"] is not None and "joint" in edge["extras"]
+            EDGE_KEY_METADATA in edge and edge[EDGE_KEY_METADATA] is not None and "joint" in edge[EDGE_KEY_METADATA]
         )
         if scene.is_articulated(object_name):
             if not edge_is_joint:
@@ -679,7 +683,7 @@ def export_usd(
                     f"/world/{object_name.replace('-', '_').replace(':', '_').replace('.', '_')}/{fixed_joint_name.split('/')[-1]}"
                 )
 
-            joint_info = edge["extras"]["joint"]
+            joint_info = edge[EDGE_KEY_METADATA]["joint"]
 
             # Since the first link by convention is transformed by an identity
             # and will be identical to the object pose, the joint transforms
@@ -700,7 +704,7 @@ def export_usd(
                 body_1_transform=body_1_transform,
             )
         elif edge_is_joint:
-            joint_info = edge["extras"]["joint"]
+            joint_info = edge[EDGE_KEY_METADATA]["joint"]
 
             body_0_transform = scene.get_transform(object_name)
             body_1_transform = np.eye(4)
@@ -728,7 +732,7 @@ def export_usd(
 
         for object_joint_indices in object_joints:
             parent_node, child_node = object_joints[object_joint_indices][0]
-            joint_info = object_joints[object_joint_indices][1]["extras"]["joint"]
+            joint_info = object_joints[object_joint_indices][1][EDGE_KEY_METADATA]["joint"]
 
             body_0_transform = scene._scene.graph.get(frame_to=child_node, frame_from=parent_node)[0]
             body_1_transform = np.eye(4)
@@ -1065,8 +1069,8 @@ def _get_object_links(obj_id, scene):
     to_remove = []
     tmp_joints = {}
     for e in object_graph.edges:
-        if object_graph.edges[e].get("extras") is not None and object_graph.edges[e].get(
-            "extras"
+        if object_graph.edges[e].get(EDGE_KEY_METADATA) is not None and object_graph.edges[e].get(
+            EDGE_KEY_METADATA
         ).get("joint", False):
             to_remove.append(e)
             tmp_joints[e] = object_graph.edges[e]

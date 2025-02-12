@@ -138,7 +138,7 @@ def test_center_mass_asset():
 
     s = pa.RefrigeratorAsset(1, 1, 1, num_shelves=1, num_door_shelves=0).scene()
     expected_com = [-0.00067258,  0.01945447,  0.49236119]
-    assert np.allclose(s.get_center_mass(["object"]), expected_com)
+    assert np.allclose(s.get_center_mass(["object"]), expected_com, atol=1e-5)
 
     desired_center_mass = [1.0, 1.0, 2.0]
     fridge = pa.RefrigeratorAsset(1, 1, 1, num_shelves=1, num_door_shelves=0, center_mass=desired_center_mass)

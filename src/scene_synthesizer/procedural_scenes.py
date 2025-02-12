@@ -1336,4 +1336,4 @@ def kitchen(seed=None, **kwargs):
         kitchen_island,
     )
 
-    return rng.choice(fn)(**kwargs)
+    return rng.choice(fn)(seed=rng, **kwargs)

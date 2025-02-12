@@ -918,7 +918,7 @@ class URDFAsset(Asset):
                 f"{namespace}/{urdf_scene.graph.base_frame}",
                 {
                     "matrix": self._origin,
-                    "extras": {
+                    constants.EDGE_KEY_METADATA: {
                         "joint": {
                             "name": f"{namespace}/origin_joint",
                             "type": "fixed",
@@ -931,7 +931,10 @@ class URDFAsset(Asset):
         # copy geometries
         geometry = {}
         for k, v in urdf_scene.geometry.items():
-            geometry[f"{namespace}/{k}"] = v.copy(include_cache=True)
+            if isinstance(v, trimesh.primitives.Primitive):
+                geometry[f"{namespace}/{k}"] = v.copy()
+            else:
+                geometry[f"{namespace}/{k}"] = v.copy(include_cache=True)
             # This is required in the latest trimesh version, see
             # https://github.com/mikedh/trimesh/issues/1989
             geometry[f"{namespace}/{k}"].density = v.density
@@ -988,7 +991,7 @@ class URDFAsset(Asset):
             # add articulation data as edge attributes
             s.graph.transforms.edge_data[(parent_node_name, node_name)].update(
                 {
-                    "extras": {
+                    constants.EDGE_KEY_METADATA: {
                         "joint": joint_property_dict
                     }
                 }
@@ -1130,7 +1133,7 @@ class USDAsset(Asset):
         # collect xforms / transformations
         added_joint_names = []
         xform_paths = sorted(usd_import.get_scene_paths(stage=stage, prim_types=["Xform", "Scope"]))
-        log.debug("All xpaths found:\n", "\n".join(map(str, xform_paths)))
+        log.debug("All xpaths found:\n" + "\n".join(map(str, xform_paths)))
 
         failure_cnt = 0
         q_index = 0
@@ -1315,7 +1318,7 @@ class USDAsset(Asset):
 
                     # Add an additional node since USD joints have relative transforms w.r.t. body0 and body1
                     joint_node_frame = joint_name + "_frame"
-                    log.debug(f"Adding {parent_node_name} --> {joint_node_frame}")
+                    log.debug(f"Adding joint {joint_name} with nodes {parent_node_name} --> {joint_node_frame}")
                     utils.add_node_to_scene(
                         scene=s,
                         node_name=joint_node_frame,
@@ -1323,7 +1326,7 @@ class USDAsset(Asset):
                         transform=np.eye(4),
                         geom_name=None,
                         geometry=None,
-                        extras=extras,
+                        **{constants.EDGE_KEY_METADATA: extras},
                     )
 
                     parent_node_name = joint_node_frame
@@ -1340,8 +1343,8 @@ class USDAsset(Asset):
                 transform=matrix,
                 geom_name=None,
                 geometry=None,
-                extras=extras,
                 node_data={"prim_path": xform_path.pathString},
+                **{constants.EDGE_KEY_METADATA: extras},
             )
 
         # add meshes
@@ -1754,7 +1757,7 @@ class MJCFAsset(Asset):
         # add edges
         scene_edge_data[(new_parent_node, new_child_node)].update(
             {
-                "extras": {
+                constants.EDGE_KEY_METADATA: {
                     "joint": {
                         "name": identifier_fn(joint),
                         "type": joint_type,
