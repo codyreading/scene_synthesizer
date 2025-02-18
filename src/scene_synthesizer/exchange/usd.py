@@ -97,7 +97,7 @@ def export_usd(
     if not write_usd_object_files:
         for obj_id in scene.get_object_names():
             # ensure that all nodes of an object do come from the same file
-            geom_names = scene.get_geometry_names(obj_id)
+            geom_names = scene.get_geometry_names(obj_id=obj_id)
             file_paths = [
                 scene.geometry[scene.graph[g][1]].metadata["file_path"]
                 for g in geom_names
@@ -858,7 +858,7 @@ def export_usd(
             
             # Determine how much the geometry is scaled w.r.t. to its initial size
             geom_scales = []
-            for object_geom_node_name in scene.get_geometry_names(object_name):
+            for object_geom_node_name in scene.get_geometry_names(obj_id=object_name):
                 object_geom_name = scene.graph.transforms.node_data[object_geom_node_name]['geometry']
                 if "extents" in scene.geometry[object_geom_name].metadata:
                     geom_scales.append(

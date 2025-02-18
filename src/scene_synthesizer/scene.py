@@ -1504,43 +1504,53 @@ class Scene(object):
 
         return True
 
-    def get_geometry(self, node_id):
-        """Return trimesh geometry associated with node node_id.
-        Returns None if no geometry is associated with the node.
+    def get_geometries(self, query=None):
+        """Returns a list of trimesh geometries associated with the query.
 
         Args:
-            node_id (str): Identifier of the scene graph node.
-
-        Raises:
-            ValueError: Raise exception if node with name node_id does not exist.
+            query (str): A regular expression that gets matched against geometry names. None will include all geometries. Defaults to None.
 
         Returns:
-            trimesh.Trimesh: Geometry associated with the node.
+            List[trimesh.Trimesh]: Geometries matching the query.
         """
-        node_data = self.graph.transforms.node_data.get(node_id)
-
-        if node_data is None:
-            raise ValueError(f"Node '{node_id}' doesn't exist in scene graph.")
+        if query is None:
+            geom_names = sorted(list(self.scene.geometry.keys()))
+        else:
+            geom_names = utils.select_sublist(
+                query=query, all_items=sorted(list(self.scene.geometry.keys()))
+            )
         
-        geom_name = node_data.get('geometry', None)
-
-        if geom_name is None:
-            return None
-
-        return self.geometry[geom_name]
-
-    def get_geometry_names(self, obj_id=None):
+        return [self.geometry[n] for n in geom_names]
+    
+    def get_geometry_names(self, query=None, obj_id=None):
         """Return all geometry node names associated with that object or all geometry node names in the scene.
 
         Args:
-            obj_id (str, optional): Object identifier. If None entire scene is considered. Defaults to None.
+            query (str or list[str]): A geometry name or list of names or regular expression. None will include all geometries if obj_id is also None. Defaults to None.
+            obj_id (str, optional): Object identifier. If None, and query is None entire scene is considered. Defaults to None.
 
         Returns:
             list(str): List of geometry names.
         """
-        if obj_id is None:
-            return list(itertools.chain.from_iterable(self.metadata["object_geometry_nodes"].values()))
-        return self._scene.metadata["object_geometry_nodes"][obj_id]
+        if query is None and obj_id is None:
+            node_names = set(self.scene.graph.nodes_geometry)
+        elif obj_id is None:
+            if type(query) is list or type(query) is tuple:
+                node_names = []
+                for k in query:
+                    if k in self.metadata["object_nodes"]:
+                        node_names.extend(self.metadata["object_nodes"][k])
+                    else:
+                        node_names.append(k)
+                node_names = set(self.scene.graph.nodes_geometry).intersection(set(node_names))
+            else:
+                node_names = utils.select_sublist(
+                    query=query, all_items=self.scene.graph.nodes_geometry
+                )
+        else:
+            node_names = self._scene.metadata["object_geometry_nodes"][obj_id]
+
+        return [self.graph[n][1] for n in sorted(node_names)]
 
     def get_object_name(self, node_id):
         """Return object name given a scene graph node.
@@ -2730,7 +2740,7 @@ class Scene(object):
         else:
             obj_ids = list(self._scene.metadata["object_nodes"].keys())
 
-        geometry_names = [item for name in obj_ids for item in self.get_geometry_names(name)]
+        geometry_names = [item for name in obj_ids for item in self.get_geometry_names(obj_id=name)]
         if "geom_ids" in kwargs:
             x = re.compile(kwargs["geom_ids"])
             geometry_names = list(filter(x.search, geometry_names))
