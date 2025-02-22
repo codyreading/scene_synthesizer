@@ -649,17 +649,20 @@ class Asset(object):
             namespace=namespace, use_collision_geometry=use_collision_geometry
         )
 
+        trimesh_scene = utils.normalize_and_bake_scale(trimesh_scene)
+
         # scale asset
         scale = self._get_scale(raw_extents=trimesh_scene.extents)
         scaled_scene = utils.scaled_trimesh_scene(trimesh_scene, scale=scale)
 
         # add origin transform to root node
-        center_mass = utils.center_mass(
-            trimesh_scene=scaled_scene, node_names=scaled_scene.graph.nodes_geometry
-        )
+        if "center_mass" in self._attributes:
+            center_mass = self._attributes["center_mass"]
+        else:
+            center_mass = utils.center_mass(trimesh_scene=scaled_scene, node_names=scaled_scene.graph.nodes_geometry)
         origin = self._get_origin_transform(
             bounds=scaled_scene.bounds,
-            center_mass=self._attributes.get("center_mass", center_mass),
+            center_mass= center_mass,
             centroid=scaled_scene.centroid,
         )
 
@@ -1752,7 +1755,7 @@ class MJCFAsset(Asset):
         if joint_type == "slide":
             joint_type = "prismatic"
 
-        print(joint_pos, joint_type, joint_axis, limit_lower, limit_upper)
+        log.debug(f"{joint_pos}, {joint_type}, {joint_axis}, {limit_lower}, {limit_upper}")
         
         # add edges
         scene_edge_data[(new_parent_node, new_child_node)].update(
@@ -1930,7 +1933,6 @@ class TrimeshSceneAsset(Asset):
         # save transforms as edge tuples
         edges = []
 
-        # print([geom[1].metadata for geom in self._model.geometry.items()])
         # Attention: Metadata for geoms is not copied when using copy()
         scene_to_add = self._model
 

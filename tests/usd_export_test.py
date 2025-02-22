@@ -499,7 +499,7 @@ def test_write_usd_object_files_false(tmp_path):
         use_collision_geometry=False
     )
 
-    scene_bounds = cabinet_scene.scene.dump(concatenate=True).bounds
+    scene_bounds = cabinet_scene.scene.to_geometry().bounds
 
     cabinet_scene.export(cabinet1_usd_path, write_usd_object_files=False)
     cabinet_scene.export(cabinet2_usd_path, write_usd_object_files=True)
@@ -507,7 +507,7 @@ def test_write_usd_object_files_false(tmp_path):
     # load scenes again
     for fname in [cabinet1_usd_path, cabinet2_usd_path]:
         s = synth.USDAsset(fname).scene(use_collision_geometry=False)
-        bounds = s.scene.dump(concatenate=True).bounds
+        bounds = s.scene.to_geometry().bounds
 
         assert np.allclose(bounds, scene_bounds, atol=1e-5)
 

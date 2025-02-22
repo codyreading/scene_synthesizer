@@ -683,3 +683,17 @@ def test_front_up_vectors():
     assert 'not orthogonal' in exc_info.value.args[0]
 
     x = synth.Asset(bowl_fname, front=[0.9, 0.1, 0], up=[0.1, 0.9, 0], tolerance_up_front_orthogonality=0.2).scene(use_collision_geometry=False)
+
+@_skip_if_file_is_missing
+def test_glb_with_scaled_transform():
+    _set_random_seed()
+
+    bowl_fname = str(TEST_DIR / "data/assets/bowl.glb")
+    s = synth.Asset(bowl_fname).scene()
+
+    # add new object as a child to the existing geometry
+    # If the tree contains scale information the resulting extents will be different
+    box_extents = [1, 1, 1]
+    s.add_object(synth.BoxAsset(extents=box_extents), parent_id='object/frl_apartment_bowl_06')
+    
+    assert np.allclose(box_extents, s.get_extents(['box']))

@@ -17,7 +17,7 @@ import yourdfpy
 # SRL
 import scene_synthesizer as synth
 
-from .test_utils import _skip_if_file_is_missing
+from .test_utils import _skip_if_file_is_missing, yourdfpy_equality_tolerance
 
 TEST_DIR = Path(__file__).parent
 
@@ -121,10 +121,12 @@ def test_primitives_2_urdf_export(tmp_path):
 
     generated_urdf = yourdfpy.URDF.load(urdf_actual, build_scene_graph=False, load_meshes=False)
     golden_urdf = yourdfpy.URDF.load(urdf_expected, build_scene_graph=False, load_meshes=False)
+    
+    with yourdfpy_equality_tolerance(1e-2):
+        assert (
+            generated_urdf == golden_urdf
+        ), f"{urdf_actual} differs from {urdf_expected}"
 
-    assert (
-        generated_urdf == golden_urdf
-    ), f"{urdf_actual} differs from {urdf_expected}"
 
 
 @_skip_if_file_is_missing

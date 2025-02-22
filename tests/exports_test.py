@@ -17,7 +17,7 @@ import yourdfpy
 import scene_synthesizer as synth
 from scene_synthesizer import procedural_assets as pa
 
-from .test_utils import _skip_if_file_is_missing
+from .test_utils import _skip_if_file_is_missing, yourdfpy_equality_tolerance
 
 TEST_DIR = Path(__file__).parent
 
@@ -117,14 +117,11 @@ def test_export_urdf_kitchen_write_meshes(tmpdir, golden_dir, kitchen_scene):
     generated_urdf = yourdfpy.URDF.load(output_fname, build_scene_graph=False, load_meshes=False)
     golden_urdf = yourdfpy.URDF.load(golden_urdf_fname, build_scene_graph=False, load_meshes=False)
 
-    previous_value = yourdfpy.urdf.EQUALITY_TOLERANCE
-    yourdfpy.urdf.EQUALITY_TOLERANCE = 1e-2
-
-    assert (
-        generated_urdf == golden_urdf
-    ), f"{output_fname} differs from {golden_urdf_fname}"
+    with yourdfpy_equality_tolerance(1e-2):
+        assert (
+            generated_urdf == golden_urdf
+        ), f"{output_fname} differs from {golden_urdf_fname}"
     
-    yourdfpy.urdf.EQUALITY_TOLERANCE = previous_value
 
 
 
@@ -141,14 +138,10 @@ def test_export_urdf_kitchen_collision_write_meshes(tmpdir, golden_dir, kitchen_
     generated_urdf = yourdfpy.URDF.load(output_fname, build_scene_graph=False, load_meshes=False)
     golden_urdf = yourdfpy.URDF.load(golden_urdf_fname, build_scene_graph=False, load_meshes=False)
 
-    previous_value = yourdfpy.urdf.EQUALITY_TOLERANCE
-    yourdfpy.urdf.EQUALITY_TOLERANCE = 1e-2
-
-    assert (
-        generated_urdf == golden_urdf
-    ), f"{output_fname} differs from {golden_urdf_fname}"
-
-    yourdfpy.urdf.EQUALITY_TOLERANCE = previous_value
+    with yourdfpy_equality_tolerance(1e-2):
+        assert (
+            generated_urdf == golden_urdf
+        ), f"{output_fname} differs from {golden_urdf_fname}"
 
 @_skip_if_file_is_missing
 def test_export_urdf_nonwatertight_mass_setting(tmpdir):

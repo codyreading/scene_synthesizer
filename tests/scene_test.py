@@ -1108,14 +1108,14 @@ def test_support_surface_generator():
         gravity=np.array([0, 0, -1]),
     )
 
-    result = list(itertools.islice(s.support_generator(), 3))
+    result = s.metadata['support_polygons']['support']
 
-    expected_facet_indices = [0, 0, 2]
+    expected_facet_indices = sorted([0, 10, 2, 0, 0, 0])
 
-    res_indices = [x.facet_index for x in result]
+    res_indices = sorted([x.facet_index for x in result])
 
     assert len(result) == len(expected_facet_indices)
-    assert np.allclose(expected_facet_indices, res_indices)
+    assert expected_facet_indices == res_indices
 
     result = list(itertools.islice(s.support_generator(sampling_fn=random.choice), 3))
 

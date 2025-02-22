@@ -1550,7 +1550,8 @@ class Scene(object):
         else:
             node_names = self._scene.metadata["object_geometry_nodes"][obj_id]
 
-        return [self.graph[n][1] for n in sorted(node_names)]
+        return node_names
+        # return [self.graph[n][1] for n in sorted(node_names)]
 
     def get_object_name(self, node_id):
         """Return object name given a scene graph node.

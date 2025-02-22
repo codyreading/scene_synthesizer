@@ -74,8 +74,11 @@ def get_mass_properties(trimesh_geometry, min_thickness=1e-3):
     center_mass = trimesh_geometry.metadata.get("center_mass", None)
 
     watertight_geometry = get_watertight_trimesh_geometry(trimesh_geometry)
-
-    watertight_geometry.density = trimesh_geometry.density
+    
+    if watertight_geometry.density != trimesh_geometry.density:
+        # Sometimes the density is configured immutable (ValueError)
+        # e.g. a bounding box of box with extents 0.0 in one dimension
+        watertight_geometry.density = trimesh_geometry.density
 
     if watertight_geometry.volume == 0.0:
         min_bbox = np.max([watertight_geometry.extents, [min_thickness] * 3], axis=0)
@@ -1514,3 +1517,47 @@ def create_torus(major_radius, minor_radius, num_major_segments=30, num_minor_se
     # Create a trimesh object from vertices and faces
     torus_mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
     return torus_mesh
+
+def normalize_and_bake_scale(trimesh_scene):
+    """Takes a trimesh scene and bakes all scale information contained in the transform tree
+    into the vertices of all meshes.
+    The resulting tree transforms will all have scale 1.
+
+    Args:
+        trimesh_scene (trimesh.Scene): A trimesh scene object.
+
+    Returns:
+        trimesh.Scene: The transformed scene (or same if scene transform tree doesn't change scale).
+    """
+    # check for all meshes whether scale is part of their transform path
+    # if yes, bake the scale information into vertices
+    for node in trimesh_scene.graph.nodes_geometry:
+        T, geom_name = trimesh_scene.graph[node]
+
+        scale, _, _, _, _ = tra.decompose_matrix(T)
+
+        if not np.allclose(scale, 1.0):
+            log.debug(f"Geometry {geom_name} has non-normalized scale {scale} in transform tree. Will normalize.")
+
+            trimesh_scene.geometry[geom_name].apply_scale(scale)
+        
+    # Go through the entire transform tree and normalize all transforms
+    for (frame_from, frame_to) in list(trimesh_scene.graph.transforms.edge_data.keys()):
+        attr = trimesh_scene.graph.transforms.edge_data[(frame_from, frame_to)]
+        T = attr['matrix']
+
+        scale, _, T_angles, T_translate, _ = tra.decompose_matrix(T)
+
+        if not np.allclose(scale, 1.0):
+            log.debug(f"Normalizing transform (frame_from={frame_from}, frame_to={frame_to}) with scale {scale}.")
+
+            T_new = tra.compose_matrix(angles=T_angles, translate=T_translate)
+            attr['matrix'] = T_new
+
+            trimesh_scene.graph.update(
+                frame_from=frame_from,
+                frame_to=frame_to,
+                **attr,
+            )
+
+    return trimesh_scene
