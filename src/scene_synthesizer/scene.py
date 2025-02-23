@@ -2178,6 +2178,7 @@ class Scene(object):
 
         if (
             EDGE_KEY_METADATA in scene_edge_data[(parent_node, child_node)]
+            and scene_edge_data[(parent_node, child_node)][EDGE_KEY_METADATA] is not None
             and "joint" in scene_edge_data[(parent_node, child_node)][EDGE_KEY_METADATA]
         ):
             raise ValueError(
