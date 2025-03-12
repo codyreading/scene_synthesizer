@@ -72,3 +72,12 @@ venv*/*
 
 # Jupyter files
 *checkpoint.ipynb
+
+# Output files
+*.gif
+*.mp4
+*.obj
+*.mtl
+*.png
+*.urdf
+*.usd
